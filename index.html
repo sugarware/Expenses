@@ -5,6 +5,13 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>交通費精算</title>
+<meta name="theme-color" content="#087b31">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="交通費精算">
+<link rel="manifest" href="./manifest-v6.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/expense-icon-180-v6.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/expense-icon-192-v6.png">
 <style>
 
 input, textarea, select {
@@ -524,5 +531,15 @@ document.addEventListener("DOMContentLoaded", function() {
     syncDateDisplayFromPicker();
 });
 </script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker-v6.js")
+      .catch(error => console.error("Service Worker registration failed:", error));
+  });
+}
+</script>
+
 </body>
 </html>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>交通費精算</title>
+<style>
+
+input, textarea, select {
+    box-sizing: border-box;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    display: block;
+}
+#memo {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    display: block;
+    box-sizing: border-box;
+}
+textarea {
+    min-height: 48px;
+    resize: vertical;
+}
+#prizeResult, #totalResult, #finalMessage {
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    line-height: 1.08 !important;
+}
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f7f7f7;
+}
+
+.container {
+    padding: 4px 10px 130px 10px;
+}
+
+h2 {
+    margin: 2px 0 4px 0;
+    font-size: 18px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+label {
+    width: 130px;
+    font-size: 15px;
+}
+
+input {
+    flex: 1;
+    padding: 4px 6px;
+    font-size: 15px;
+}
+
+
+
+.formula {
+    margin-top: 6px;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+.breakdown {
+    margin-top: 10px;
+    font-size: 15px;
+}
+
+.total {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 6px;
+}
+
+.large-message {
+    margin-top: 14px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #d00000;
+}
+
+.bottom-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    border-top: 1px solid #ccc;
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+}
+
+textarea {
+    flex: 1;
+    padding: 6px;
+    font-size: 15px;
+    min-height: 48px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.input-group.memo-group {
+    align-items: flex-start;
+}
+
+.small-note {
+    margin: 2px 0 0 130px;
+    font-size: 12px;
+    color: #666;
+}
+
+#dateDisplay {
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
+    background: #fff;
+}
+
+
+.date-overlay-wrap {
+    position: relative;
+    width: 100%;
+}
+.date-overlay-wrap #dateDisplay {
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
+    background: #fff;
+}
+.date-overlay-wrap #date {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.01;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+
+.input-group > input,
+.input-group > textarea,
+.input-group > .date-overlay-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.date-overlay-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.date-overlay-wrap #dateDisplay {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.date-overlay-wrap #date {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.01;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+.input-group.memo-group > textarea {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+<h2>交通費精算入力</h2>
+<div class="input-group">
+<label>日付</label>
+
+<div class="date-overlay-wrap">
+    <input id="dateDisplay" type="text" placeholder="YYYY/MM/DD" readonly>
+    <input id="date" type="date" onchange="syncDateDisplayFromPicker()">
+</div>
+</div>
+<div class="input-group">
+<label>タイトル</label>
+<input id="title" oninput="calculate()" type="text"/>
+</div>
+<div class="input-group">
+<label>走行距離 (km)</label>
+<input id="distance" oninput="calculate()" type="number"/>
+</div>
+<div class="input-group">
+<label>燃費 (km/l)</label>
+<input id="fuelEfficiency" oninput="calculate()" type="number"/>
+</div>
+<div class="input-group">
+<label>ガソリン単価</label>
+<input id="fuelPrice" oninput="calculate()" type="number"/>
+</div>
+<div class="input-group">
+<label>有料道路料金</label>
+<input id="toll" type="text" placeholder="例: 350 720 1180 / 350,720,1180 / 350+720+1180" oninput="calculate()" autocapitalize="off" autocorrect="off" spellcheck="false">
+</div>
+<div class="input-group">
+<label>3人モード</label>
+<select id="threePersonMode" onchange="updateThreePersonMode()">
+<option value="off">OFF（2人）</option>
+<option value="on">ON（3人）</option>
+</select>
+</div>
+<div class="input-group">
+<label>ゴルフ賞金</label>
+<input id="prize" oninput="calculate()" type="number"/>
+</div>
+<div class="input-group memo-group">
+<label>メモ</label>
+<textarea id="memo" oninput="calculate()" placeholder="自由記入" rows="2"></textarea>
+</div>
+
+<h2>計算結果</h2>
+<div class="formula" id="formulaText"></div>
+<div class="breakdown" id="breakdownText"></div>
+<div class="total" id="totalText"></div>
+<div class="large-message" id="finalMessage"></div>
+</div>
+<div class="bottom-buttons">
+<button onclick="calculate()">再計算</button>
+<button onclick="saveData()">保存</button>
+<button onclick="loadData()">読込</button>
+</div>
+<input accept=".json,application/json" id="fileInput" onchange="handleFile(event)" style="display:none" type="file"/>
+<script>
+function formatDateForDisplay(value) {
+    return value ? value.replace(/-/g, "/") : "";
+}
+
+function formatDateForPicker(value) {
+    return value ? value.replace(/\//g, "-") : "";
+}
+
+function syncDateDisplayFromPicker() {
+    const picker = document.getElementById("date");
+    const display = document.getElementById("dateDisplay");
+    if (picker && display) {
+        display.value = formatDateForDisplay(picker.value);
+    }
+}
+
+function syncDatePickerFromDataValue(value) {
+    const picker = document.getElementById("date");
+    const display = document.getElementById("dateDisplay");
+    const normalized = formatDateForPicker(value || "");
+    if (picker) picker.value = normalized;
+    if (display) display.value = formatDateForDisplay(normalized);
+}
+
+function getSafeValue(data, key, fallback = "") {
+    return (data && Object.prototype.hasOwnProperty.call(data, key)) ? data[key] : fallback;
+}
+
+
+
+function parseTollInput(text) {
+    const raw = (text || "").trim();
+    if (!raw) {
+        return {
+            values: [],
+            total: 0,
+            valid: true
+        };
+    }
+
+    const normalizedText = raw
+        .replace(/　/g, " ")
+        .replace(/,/g, " ")
+        .replace(/\+/g, " ");
+
+    const tokens = normalizedText.split(/\s+/).filter(Boolean);
+    const values = [];
+
+    for (const token of tokens) {
+        if (!/^[-+]?\d+(\.\d+)?$/.test(token)) {
+            return {
+                values: [],
+                total: 0,
+                valid: false
+            };
+        }
+        values.push(parseFloat(token));
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return {
+        values,
+        total,
+        valid: true
+    };
+}
+
+function getValues() {
+    const tollText = document.getElementById("toll").value;
+    const parsedToll = parseTollInput(tollText);
+
+    return {
+        title: document.getElementById("title").value,
+        date: document.getElementById("date").value ? formatDateForDisplay(document.getElementById("date").value) : "",
+        distance: parseFloat(document.getElementById("distance").value) || 0,
+        fuelEfficiency: parseFloat(document.getElementById("fuelEfficiency").value) || 0,
+        fuelPrice: parseFloat(document.getElementById("fuelPrice").value) || 0,
+        toll: tollText,
+        tollItems: parsedToll.values,
+        tollTotal: parsedToll.total,
+        tollValid: parsedToll.valid,
+        threePersonMode: document.getElementById("threePersonMode").value === "on",
+        prize: parseFloat(document.getElementById("prize").value) || 0,
+        memo: document.getElementById("memo").value
+    };
+}
+
+function updateThreePersonMode() {
+    const isThree = document.getElementById("threePersonMode").value === "on";
+    const prizeInput = document.getElementById("prize");
+    if (isThree) {
+        prizeInput.value = "0";
+        prizeInput.disabled = true;
+    } else {
+        prizeInput.disabled = false;
+    }
+    calculate();
+}
+
+function calculate() {
+    const v = getValues();
+    const divisor = v.threePersonMode ? 3 : 2;
+    const effectivePrize = v.threePersonMode ? 0 : v.prize;
+
+    if (!v.tollValid) {
+        document.getElementById("formulaText").innerText =
+            "有料道路料金はスペース・カンマ・+ 区切りの数値で入力してください";
+        document.getElementById("breakdownText").innerHTML = "";
+        document.getElementById("totalText").innerText = "";
+        document.getElementById("finalMessage").innerText = "";
+        return;
+    }
+
+    let transportCost = 0;
+    if (v.fuelEfficiency > 0) {
+        transportCost = (v.distance / v.fuelEfficiency * v.fuelPrice + v.tollTotal) / divisor;
+    }
+
+    let total = transportCost + effectivePrize;
+
+    transportCost = Math.round(transportCost);
+    total = Math.round(total);
+
+    const formattedPrize = effectivePrize < 0
+        ? "(" + effectivePrize.toLocaleString() + ")"
+        : effectivePrize.toLocaleString();
+
+    const tollExpression = v.tollItems.length > 0
+        ? ` + 道路(${v.tollItems.map(value => value.toLocaleString()).join(" + ")})`
+        : "";
+
+    document.getElementById("formulaText").innerText =
+        v.threePersonMode
+        ? `計算式: ( ガス(${v.distance} ÷ ${v.fuelEfficiency} × ${v.fuelPrice})${tollExpression} ) ÷ 3（賞金は計算対象外）`
+        : `計算式: ( ガス(${v.distance} ÷ ${v.fuelEfficiency} × ${v.fuelPrice})${tollExpression} ) ÷ 2 + 賞金(${formattedPrize})`;
+
+    document.getElementById("breakdownText").innerHTML =
+        `有料道路合計: ${v.tollTotal.toLocaleString()} 円<br>` +
+        `交通費分: ${transportCost.toLocaleString()} 円<br>` +
+        `賞金分: ${effectivePrize.toLocaleString()} 円` +
+        (v.threePersonMode ? "（3人モードでは固定）" : "");
+
+    document.getElementById("totalText").innerText =
+        `合計: ${total.toLocaleString()} 円`;
+
+    document.getElementById("finalMessage").innerHTML =
+        '<span style="color:#d00000;font-size:24px;font-weight:bold;">' + total.toLocaleString() + '円</span>' +
+        '<span style="color:#000;font-size:15px;font-weight:normal;">を</span>' +
+        '<span style="color:#d00000;font-size:24px;font-weight:bold;">コトラ送金</span>' +
+        '<span style="color:#000;font-size:15px;font-weight:normal;">願います</span>';
+}
+
+function saveData() {
+    const v = getValues();
+    const json = JSON.stringify({
+        title: v.title,
+        date: v.date,
+        distance: v.distance,
+        fuelEfficiency: v.fuelEfficiency,
+        fuelPrice: v.fuelPrice,
+        toll: v.toll,
+        threePersonMode: v.threePersonMode,
+        prize: v.threePersonMode ? 0 : v.prize,
+        memo: v.memo
+    }, null, 2);
+
+    const title = v.title ? v.title.replace(/[\\/:*?"<>|]/g, "") : "交通費精算";
+    const date = v.date || new Date().toISOString().split("T")[0];
+    const filename = `${title}_${date}.json`;
+
+    const blob = new Blob(
+        ["\uFEFF" + json],
+        { type: "application/json;charset=utf-8;" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
+
+function loadData() {
+    document.getElementById("fileInput").click();
+}
+
+
+function handleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+        alert("JSONファイルのみ読み込み可能です");
+        event.target.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const buffer = e.target.result;
+        let text;
+
+        try {
+            text = new TextDecoder("utf-8").decode(buffer);
+            JSON.parse(text);
+        } catch {
+            try {
+                text = new TextDecoder("shift_jis").decode(buffer);
+                JSON.parse(text);
+            } catch {
+                alert("文字コード判別に失敗しました");
+                return;
+            }
+        }
+
+        try {
+            const data = JSON.parse(text);
+
+            const modeSelect = document.getElementById("threePersonMode");
+            modeSelect.value = getSafeValue(data, "threePersonMode", false) ? "on" : "off";
+
+            for (let key in data) {
+                if (key === "threePersonMode") {
+                    continue;
+                } else if (key === "date") {
+                    syncDatePickerFromDataValue(getSafeValue(data, "date", ""));
+                } else if (document.getElementById(key)) {
+                    document.getElementById(key).value = getSafeValue(data, key, "");
+                }
+            }
+
+            if (!Object.prototype.hasOwnProperty.call(data, "memo")) {
+                const memo = document.getElementById("memo");
+                if (memo) memo.value = "";
+            }
+
+            if (!Object.prototype.hasOwnProperty.call(data, "toll")) {
+                const toll = document.getElementById("toll");
+                if (toll) toll.value = "";
+            }
+
+            updateThreePersonMode();
+        } catch {
+            alert("JSON形式が正しくありません");
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+
+updateThreePersonMode();
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    syncDateDisplayFromPicker();
+});
+</script>
+</body>
+</html>
